@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description: "Tus rutinas, tu calendario y cada serie en un mismo lugar.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Entrenar" },
-  icons: { icon: "/icon.svg", apple: "/apple-touch-icon.png" },
+  icons: { icon: "/pullup-192.png", apple: "/pullup-apple-touch.png" },
 };
 export const viewport: Viewport = {
   width: "device-width",
@@ -24,3 +24,4 @@ export default function RootLayout({
     </html>
   );
 }
+

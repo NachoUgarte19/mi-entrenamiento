@@ -3,11 +3,11 @@ import path from "node:path";
 import crypto from "node:crypto";
 import sharp from "sharp";
 const root = path.resolve("out");
-const icon = await fs.readFile("public/icon.svg");
+const icon = await fs.readFile("public/pullup-logo.png");
 for (const [name, size] of [
-  ["icon-192.png", 192],
-  ["icon-512.png", 512],
-  ["apple-touch-icon.png", 180],
+  ["pullup-192.png", 192],
+  ["pullup-512.png", 512],
+  ["pullup-apple-touch.png", 180],
 ]) {
   const buffer = await sharp(icon).resize(size, size).png().toBuffer();
   await fs.writeFile(path.join(root, name), buffer);
@@ -50,3 +50,4 @@ self.addEventListener('fetch',event=>{
 `,
 );
 console.log("Offline shell and iPhone icons ready. Cache version:", version);
+

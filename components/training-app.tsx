@@ -451,7 +451,7 @@ export default function TrainingApp() {
     <div className="app-shell">
       <aside className="desktop-sidebar">
         <div className="brand">
-          <Layers2 />
+          <img className="brand-icon" src="/pullup-192.png" alt="" width={32} height={32} />
           Mi entrenamiento
         </div>
         <p className="sidebar-caption">Tu espacio para entrenar.</p>
@@ -470,7 +470,7 @@ export default function TrainingApp() {
       <div className="app-main">
         <header className="topbar">
           <div className="brand">
-            <Layers2 size={21} />
+            <img className="brand-icon" src="/pullup-192.png" alt="" width={32} height={32} />
             <span>Mi entrenamiento</span>
           </div>
           <button
@@ -521,7 +521,7 @@ export default function TrainingApp() {
           </main>
         ) : !ready ? (
           <main className="loading" aria-busy="true">
-            <Layers2 />
+            <img className="brand-icon" src="/pullup-192.png" alt="" width={32} height={32} />
             <p>Preparando tus rutinas…</p>
           </main>
         ) : (
@@ -1483,3 +1483,4 @@ function Week({
     </div>
   );
 }
+
