@@ -8,6 +8,8 @@ import {
   save,
   importRecords,
   resolveConflict,
+  chooseStart,
+  needsOnboarding,
 } from "../lib/store";
 import { seedExercises } from "../lib/seeds";
 import type { Exercise } from "../lib/model";
@@ -82,4 +84,35 @@ test("conflict resolution retains selected data and uses remote revision", async
   const cloud = await db.records.get(["conflict-owner", "x"]);
   assert.equal((cloud?.data as Exercise).name, "Remote");
   assert.equal(cloud?.dirty, false);
+});
+
+test("new account can start empty; choosing templates never overwrites existing data", async () => {
+  Object.defineProperty(globalThis, "navigator", {
+    value: { onLine: true },
+    configurable: true,
+  });
+  await prepare("fresh-empty");
+  assert.equal(await needsOnboarding("fresh-empty"), true);
+  assert.equal((await records("fresh-empty")).length, 0);
+  await chooseStart("fresh-empty", false);
+  await prepare("fresh-empty");
+  assert.equal(await needsOnboarding("fresh-empty"), false);
+  assert.equal((await records("fresh-empty")).length, 0);
+  await prepare("fresh-templates");
+  await save("fresh-templates", "exercise", {
+    ...seedExercises[0],
+    name: "Personalizado",
+  });
+  await chooseStart("fresh-templates", true);
+  assert.equal(
+    (
+      (await db.records.get(["fresh-templates", seedExercises[0].id]))
+        ?.data as Exercise
+    ).name,
+    "Personalizado",
+  );
+  assert.ok(
+    (await records("fresh-templates")).some((r) => r.kind === "routine"),
+  );
+  assert.equal((await records("fresh-empty")).length, 0);
 });

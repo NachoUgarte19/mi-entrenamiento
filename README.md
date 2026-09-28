@@ -86,3 +86,14 @@ Registro manual por cuenta de correr, cinta, caminatas, bicicleta, bici fija, el
 Para proyectos existentes ejecutar `supabase/cardio-migration.sql` antes de publicar. Mantiene las políticas RLS. Los respaldos incluyen los nuevos registros; los respaldos anteriores siguen siendo compatibles. Actualizar todos los dispositivos antes de usar cardio.
 
 Validación: `npm test`; `TEST_URL=http://localhost:3002 node tests/cardio-browser.cjs` (variable de entorno según shell). La prueba de navegador usa Supabase simulado y no escribe en cuentas reales.
+
+## Detalles de entrenamiento y progreso
+
+- Última sesión compatible por ejercicio: resultados, carga y RIR/RPE. Precarga confirmada de las series pendientes, sin completar automáticamente ni reemplazar las ya realizadas.
+- Descanso automático al marcar una serie, desactivable durante la sesión; segundos ajustables (0 desactiva la pausa). Usa hora de finalización para no acumular retrasos del temporizador. No promete alertas del sistema con la app cerrada.
+- Progreso: resumen mensual seleccionable (días únicos, fuerza, cardio, minutos y km), gráfico de mejor serie por sesión con tabla accesible y récords de repeticiones/carga. La asistencia considera mejor un valor menor. No mezcla unidades o tipos de carga diferentes.
+- Mejores tiempos de cardio por actividad y distancia exacta; no equivale a comparar recorridos o condiciones.
+- Cambiar fecha en el calendario ya permite reprogramar planes, preservando sesiones realizadas.
+- Nuevas cuentas vacías eligen empezar de cero o copiar plantillas. Cuentas ya inicializadas conservan sus datos. La elección vacía se recuerda por cuenta en el dispositivo; si aún no hay registros sincronizados, otro dispositivo vuelve a ofrecer la elección.
+
+Pruebas adicionales: `node tests/progress-browser.cjs` con TEST_URL configurado; acceso y nube simulados, sin escribir datos reales. `npm test` cubre selección de historial, precarga, métricas y plantillas.

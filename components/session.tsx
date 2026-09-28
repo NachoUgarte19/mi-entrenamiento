@@ -10,6 +10,7 @@ import {
   type TrainingSession,
   type TrainingSet,
 } from "@/lib/model";
+import { previousItem, repeatPrevious } from "@/lib/progress";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 
@@ -50,7 +51,9 @@ export function SessionView({
     [confirm, setConfirm] = useState(false),
     [timerEnd, setTimerEnd] = useState<number | null>(null),
     [remaining, setRemaining] = useState(0),
-    [timerDone, setTimerDone] = useState(false);
+    [timerDone, setTimerDone] = useState(false),
+    [autoRest, setAutoRest] = useState(true),
+    [repeatConfirm, setRepeatConfirm] = useState(false);
   const current = useRef(session),
     queue = useRef(Promise.resolve()),
     pending = useRef(0),
@@ -121,21 +124,7 @@ export function SessionView({
   const total = session.items
     .filter((i) => !i.skipped)
     .flatMap((i) => i.sets).length;
-  const previous = item
-    ? history
-        .filter(
-          (s) =>
-            s.id !== session.id &&
-            s.status === "completed" &&
-            s.startedAt < session.startedAt,
-        )
-        .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
-        .flatMap((s) => s.items)
-        .find(
-          (i) =>
-            i.exercise.id === item.exercise.id && i.sets.some((s) => s.done),
-        )
-    : undefined;
+  const previous = item ? previousItem(history, session, item) : undefined;
   const leave = async () => {
     await queue.current;
     if (!failed.current) onBack();
@@ -162,6 +151,22 @@ export function SessionView({
   }
   return (
     <div className="session-view">
+      {repeatConfirm && previous && item && (
+        <Modal
+          title="Usar valores anteriores"
+          description="Se reemplazarán los valores de las series pendientes que tengan una serie anterior equivalente. Las completadas se conservan; ninguna se marcará realizada automáticamente."
+          onClose={() => setRepeatConfirm(false)}
+        >
+          <Button
+            onClick={() => {
+              itemUpdate(repeatPrevious(item, previous));
+              setRepeatConfirm(false);
+            }}
+          >
+            Precargar series pendientes
+          </Button>
+        </Modal>
+      )}
       <Button variant="ghost" onClick={leave}>
         <ArrowLeft size={17} />
         Volver
@@ -237,11 +242,19 @@ export function SessionView({
                   .filter((s) => s.done)
                   .map(
                     (s) =>
-                      `${s.value ?? "✓"}${s.weight !== null ? ` (${s.weight} kg)` : ""}`,
+                      `${s.value ?? "✓"}${s.weight !== null ? ` (${s.weight} kg)` : ""}${s.rir !== null ? ` · RIR ${s.rir}` : ""}${s.rpe !== null ? ` · RPE ${s.rpe}` : ""}`,
                   )
                   .join(" / ")}{" "}
                 {units[item.exercise.unit].toLowerCase()}
               </p>
+            )}
+            {previous && !readonly && !item.skipped && (
+              <Button
+                variant="secondary"
+                onClick={() => setRepeatConfirm(true)}
+              >
+                Usar valores anteriores
+              </Button>
             )}
             {item.skipped ? (
               <div className="empty compact">
@@ -340,6 +353,10 @@ export function SessionView({
                           }
                           setError("");
                           setUpdate(set.id, { done: !set.done });
+                          if (!set.done && autoRest && item.rest > 0) {
+                            setTimerDone(false);
+                            setTimerEnd(Date.now() + item.rest * 1000);
+                          }
                         }}
                       >
                         <Check size={20} />
@@ -440,39 +457,68 @@ export function SessionView({
             )}
           </section>
           {!readonly && (
-            <div className="rest">
-              <Timer size={20} />
-              <span>
-                Descanso
-                <br />
-                <small>
-                  {timerEnd
-                    ? "En curso"
-                    : item.rest
-                      ? "Sugerido en tu rutina"
-                      : "Sin pausa pautada"}
-                </small>
-              </span>
-              <strong aria-live="off">
-                {Math.floor(
-                  (timerDone ? 0 : timerEnd ? remaining : item.rest) / 60,
-                )}
-                :
-                {String(
-                  (timerDone ? 0 : timerEnd ? remaining : item.rest) % 60,
-                ).padStart(2, "0")}
-              </strong>
-              <Button
-                variant="ghost"
-                disabled={!item.rest && !timerEnd}
-                onClick={() => {
-                  setTimerDone(false);
-                  setTimerEnd(timerEnd ? null : Date.now() + item.rest * 1000);
-                }}
-              >
-                {timerEnd ? "Detener" : "Iniciar"}
-              </Button>
-            </div>
+            <>
+              <div className="rest-options">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={autoRest}
+                    onChange={(e) => setAutoRest(e.target.checked)}
+                  />{" "}
+                  Descanso automático
+                </label>
+                <label>
+                  Descanso (segundos)
+                  <input
+                    type="number"
+                    min="0"
+                    max="1800"
+                    step="1"
+                    value={item.rest}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isInteger(n) && n >= 0 && n <= 1800)
+                        itemUpdate({ ...item, rest: n });
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="rest">
+                <Timer size={20} />
+                <span>
+                  Descanso
+                  <br />
+                  <small>
+                    {timerEnd
+                      ? "En curso"
+                      : item.rest
+                        ? "Sugerido en tu rutina"
+                        : "Sin pausa pautada"}
+                  </small>
+                </span>
+                <strong aria-live="off">
+                  {Math.floor(
+                    (timerDone ? 0 : timerEnd ? remaining : item.rest) / 60,
+                  )}
+                  :
+                  {String(
+                    (timerDone ? 0 : timerEnd ? remaining : item.rest) % 60,
+                  ).padStart(2, "0")}
+                </strong>
+                <Button
+                  variant="ghost"
+                  disabled={!item.rest && !timerEnd}
+                  onClick={() => {
+                    setTimerDone(false);
+                    setTimerEnd(
+                      timerEnd ? null : Date.now() + item.rest * 1000,
+                    );
+                  }}
+                >
+                  {timerEnd ? "Detener" : "Iniciar"}
+                </Button>
+              </div>
+            </>
           )}
           <div className="actions">
             <Button

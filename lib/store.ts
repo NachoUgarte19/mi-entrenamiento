@@ -157,10 +157,17 @@ export async function prepare(owner: string) {
   }
   await db.transaction("rw", db.records, db.meta, async () => {
     if (await db.meta.get("initialized:" + owner)) return;
-    for (const [kind, seeds] of [
-      ["exercise", seedExercises],
-      ["routine", seedRoutines],
-    ] as const) {
+    if (
+      owner !== LOCAL_OWNER &&
+      !(await db.records.where("owner").equals(owner).count())
+    )
+      await db.meta.put({ key: "onboarding:" + owner, value: "pending" });
+    for (const [kind, seeds] of owner === LOCAL_OWNER
+      ? ([
+          ["exercise", seedExercises],
+          ["routine", seedRoutines],
+        ] as const)
+      : []) {
       for (const data of seeds) {
         if (!(await db.records.get([owner, data.id])))
           await db.records.put({
@@ -243,3 +250,30 @@ export async function resolveConflict(
   notify();
 }
 
+export async function needsOnboarding(owner: string) {
+  return (await db.meta.get("onboarding:" + owner))?.value === "pending";
+}
+export async function chooseStart(owner: string, templates: boolean) {
+  await db.transaction("rw", db.records, db.meta, async () => {
+    if (templates)
+      for (const [kind, seeds] of [
+        ["exercise", seedExercises],
+        ["routine", seedRoutines],
+      ] as const) {
+        for (const data of seeds)
+          if (!(await db.records.get([owner, data.id])))
+            await db.records.put({
+              owner,
+              id: data.id,
+              kind,
+              data,
+              revision: 0,
+              dirty: true,
+              deleted: false,
+              mutation: uid(),
+            });
+      }
+    await db.meta.put({ key: "onboarding:" + owner, value: "done" });
+  });
+  notify();
+}

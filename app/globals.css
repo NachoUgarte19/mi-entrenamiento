@@ -1210,3 +1210,16 @@ nav button[aria-current="page"] {
 .mobile-nav nav { grid-template-columns:repeat(5,minmax(0,1fr)); }
 @media(max-width:360px) { .mobile-nav nav button { font-size:10px; padding-inline:2px; } .cardio-record { padding:12px; } }
 .cardio-legend { color:#0e7490; background:#ecfeff; padding:4px 8px; border-radius:6px; font-size:12px; }
+
+.rest-options { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:16px 0; }
+.rest-options label { display:flex; align-items:center; gap:8px; }
+.rest-options input[type=checkbox] { width:20px; height:20px; }
+.rest-options input[type=number] { width:80px; }
+.progress-details { display:grid; gap:16px; margin-top:20px; }
+.summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:16px; margin-top:18px; }
+.summary-grid > div { display:grid; gap:6px; }
+.summary-grid strong { color:var(--primary); font-size:26px; }
+.summary-grid span { color:var(--muted); font-size:12px; }
+.record-chip { background:#eaf3f0; padding:8px 12px; border-radius:8px; }
+.exercise-chart { display:block; width:100%; height:auto; margin:16px 0; }
+.cardio-bests p { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }

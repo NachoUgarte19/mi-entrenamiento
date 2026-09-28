@@ -28,7 +28,7 @@ const { chromium, expect } = require('@playwright/test');
   await page.getByRole('button',{name:'Ocultar contraseña',exact:true}).click();await expect(page.locator('input[name=password]')).toHaveAttribute('type','password');
   await context.setOffline(true);await expect(page.getByRole('button',{name:'Iniciar sesión',exact:true})).toBeDisabled();await context.setOffline(false);
   await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await expect(page.locator('.error')).toContainText('no son correctos');
-  await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
+  await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await page.getByRole('button',{name:'Usar plantillas de calistenia',exact:true}).click();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
   await page.reload();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
   await page.getByRole('button',{name:'Cerrar',exact:true}).click();
   await page.locator('.mobile-nav').getByRole('button',{name:'Cardio',exact:true}).click();
@@ -64,5 +64,6 @@ const { chromium, expect } = require('@playwright/test');
   console.log('PASS: cardio CRUD, decimal comma, pace, offline edit, reload, calendar and responsive widths; email/password, empty/offline validation, reveal toggle, invalid credentials retry, same-app login, persisted session after reload, no stored password, no email requests. Supabase mocked.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+
 
 

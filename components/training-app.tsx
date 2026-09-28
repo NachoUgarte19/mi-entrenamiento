@@ -1,4 +1,5 @@
 "use client";
+import { ProgressDetails } from "./progress-details";
 import { CardioTab } from "./cardio";
 import { type Cardio, cardioActivities, cardioDuration } from "@/lib/model";
 import { Activity } from "lucide-react";
@@ -49,6 +50,8 @@ import {
   type TrainingSession,
 } from "@/lib/model";
 import {
+  needsOnboarding,
+  chooseStart,
   cloudConfigured,
   importRecords,
   LOCAL_OWNER,
@@ -99,6 +102,7 @@ function message(e: unknown) {
 }
 
 export default function TrainingApp({ initialUser }: { initialUser: User }) {
+  const [onboarding, setOnboarding] = useState(false);
   const [tab, setTab] = useState<Tab>("train"),
     [owner, setOwner] = useState(initialUser.id),
     [user, setUser] = useState<User | null>(initialUser),
@@ -140,7 +144,9 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
   const routines = visible
     .filter((r) => r.kind === "routine")
     .map((r) => r.data as Routine);
-  const cardio = visible.filter(r => r.kind === "cardio").map(r => r.data as Cardio);
+  const cardio = visible
+    .filter((r) => r.kind === "cardio")
+    .map((r) => r.data as Cardio);
   const plans = visible
     .filter((r) => r.kind === "plan")
     .map((r) => r.data as Plan);
@@ -204,6 +210,10 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
       void refresh();
     });
     void prepare(owner)
+      .then(async () => {
+        const needed = await needsOnboarding(owner);
+        if (alive) setOnboarding(needed);
+      })
       .then(refresh)
       .then(() => {
         if (alive) setReady(true);
@@ -454,9 +464,52 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
   }
   return (
     <div className="app-shell">
+      {ready && onboarding && (
+        <Modal
+          title="Tu espacio para entrenar"
+          description="Elegí cómo empezar. Tus rutinas y registros pertenecen solo a tu cuenta."
+          onClose={() => {}}
+        >
+          <div className="form-grid">
+            <Button
+              disabled={actionBusy}
+              onClick={() =>
+                void run(async () => {
+                  await chooseStart(owner, false);
+                  setOnboarding(false);
+                })
+              }
+            >
+              Empezar de cero
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={actionBusy}
+              onClick={() =>
+                void run(async () => {
+                  await chooseStart(owner, true);
+                  setOnboarding(false);
+                })
+              }
+            >
+              Usar plantillas de calistenia
+            </Button>
+            <p className="muted">
+              Las plantillas incluyen Tirón, Empuje y Full body. Podés editarlas
+              libremente.
+            </p>
+          </div>
+        </Modal>
+      )}
       <aside className="desktop-sidebar">
         <div className="brand">
-          <img className="brand-icon" src="/pullup-192.png" alt="" width={32} height={32} />
+          <img
+            className="brand-icon"
+            src="/pullup-192.png"
+            alt=""
+            width={32}
+            height={32}
+          />
           Mi entrenamiento
         </div>
         <p className="sidebar-caption">Tu espacio para entrenar.</p>
@@ -475,7 +528,13 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
       <div className="app-main">
         <header className="topbar">
           <div className="brand">
-            <img className="brand-icon" src="/pullup-192.png" alt="" width={32} height={32} />
+            <img
+              className="brand-icon"
+              src="/pullup-192.png"
+              alt=""
+              width={32}
+              height={32}
+            />
             <span>Mi entrenamiento</span>
           </div>
           <button
@@ -526,7 +585,13 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
           </main>
         ) : !ready ? (
           <main className="loading" aria-busy="true">
-            <img className="brand-icon" src="/pullup-192.png" alt="" width={32} height={32} />
+            <img
+              className="brand-icon"
+              src="/pullup-192.png"
+              alt=""
+              width={32}
+              height={32}
+            />
             <p>Preparando tus rutinas…</p>
           </main>
         ) : (
@@ -547,7 +612,12 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
               />
             ) : (
               <>
-                {tab === "cardio" && <CardioTab items={cardio} onSave={(c, deleted) => persist("cardio", c, deleted)} />}
+                {tab === "cardio" && (
+                  <CardioTab
+                    items={cardio}
+                    onSave={(c, deleted) => persist("cardio", c, deleted)}
+                  />
+                )}
                 {tab === "train" && (
                   <>
                     <Header
@@ -617,6 +687,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                         </Button>
                       </section>
                     )}
+
                     <div className="section-heading section-space">
                       <h2>Tus rutinas</h2>
                       <Button
@@ -643,6 +714,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                         </button>
                       ))}
                     </div>
+
                     <div className="section-heading section-space">
                       <h2>Próximos días</h2>
                       <Button
@@ -936,13 +1008,15 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                               <button
                                 className={date === today ? "today" : ""}
                                 key={date}
-                                aria-label={`${prettyDate(date)}, ${ps.length} planificados, ${ss.length} realizados, ${cardio.filter(c => c.date === date).length} de cardio`}
+                                aria-label={`${prettyDate(date)}, ${ps.length} planificados, ${ss.length} realizados, ${cardio.filter((c) => c.date === date).length} de cardio`}
                                 aria-pressed={date === selectedDate}
                                 onClick={() => setSelectedDate(date)}
                               >
                                 {i + 1}
                                 <span className="calendar-dots">
-                                  {cardio.some(c => c.date === date) && <i className="cardio-dot" />}
+                                  {cardio.some((c) => c.date === date) && (
+                                    <i className="cardio-dot" />
+                                  )}
                                   {categories.map((c) => (
                                     <i key={c} className={c} />
                                   ))}
@@ -951,7 +1025,8 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                             );
                           })}
                         </div>
-                        <div className="legend"><span className="cardio-legend">Cardio</span>
+                        <div className="legend">
+                          <span className="cardio-legend">Cardio</span>
                           {(["pull", "push", "full", "class"] as const).map(
                             (c) => (
                               <Badge key={c} category={c} />
@@ -962,7 +1037,26 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                       <section className="day-agenda">
                         <h2>{prettyDate(selectedDate)}</h2>
                         {dayPlans.map(planCard)}
-                        {cardio.filter(c => c.date === selectedDate).map(c => <button className="agenda-row" key={c.id} onClick={() => setTab("cardio")}><div><small>Cardio realizado</small><strong>{cardioActivities[c.activity]}</strong><span>{cardioDuration(c.durationSeconds)}{c.distanceKm !== null && ` · ${c.distanceKm} km`}</span></div><Activity size={19}/></button>)}
+                        {cardio
+                          .filter((c) => c.date === selectedDate)
+                          .map((c) => (
+                            <button
+                              className="agenda-row"
+                              key={c.id}
+                              onClick={() => setTab("cardio")}
+                            >
+                              <div>
+                                <small>Cardio realizado</small>
+                                <strong>{cardioActivities[c.activity]}</strong>
+                                <span>
+                                  {cardioDuration(c.durationSeconds)}
+                                  {c.distanceKm !== null &&
+                                    ` · ${c.distanceKm} km`}
+                                </span>
+                              </div>
+                              <Activity size={19} />
+                            </button>
+                          ))}
                         {completed
                           .filter(
                             (s) =>
@@ -983,7 +1077,8 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                             </button>
                           ))}
                         {!dayPlans.length &&
-                          !completed.some((s) => s.date === selectedDate) && !cardio.some(c => c.date === selectedDate) && (
+                          !completed.some((s) => s.date === selectedDate) &&
+                          !cardio.some((c) => c.date === selectedDate) && (
                             <div className="empty compact">
                               <CalendarDays size={28} />
                               <h3>Un día libre</h3>
@@ -1060,6 +1155,12 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                         ))}
                       </select>
                     </label>
+
+                    <ProgressDetails
+                      sessions={completed}
+                      cardio={cardio}
+                      exerciseId={metricExercise}
+                    />
                     <div className="section-heading section-space">
                       <h2>
                         {metricExercise
@@ -1264,7 +1365,13 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
               </div>
             ) : user ? (
               <>
-                <p className="account-email">{user.email}</p><details><summary>Cambiar contraseña</summary><SetPassword onDone={() => setToast("Contraseña actualizada.")} /></details>
+                <p className="account-email">{user.email}</p>
+                <details>
+                  <summary>Cambiar contraseña</summary>
+                  <SetPassword
+                    onDone={() => setToast("Contraseña actualizada.")}
+                  />
+                </details>
                 <Button
                   variant="secondary"
                   disabled={syncing || !online}
@@ -1492,8 +1599,3 @@ function Week({
     </div>
   );
 }
-
-
-
-
-

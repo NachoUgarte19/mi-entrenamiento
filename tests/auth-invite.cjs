@@ -31,6 +31,7 @@ const { chromium, expect } = require('@playwright/test');
   if(changes)throw Error('Mismatch submitted');
   await page.getByLabel('Repetir contraseña',{exact:true}).fill('invited-password-123');
   await page.getByRole('button',{name:'Guardar contraseña'}).click();
+  await page.getByRole('button',{name:'Empezar de cero',exact:true}).click();
   await page.getByRole('button',{name:'Cuenta y ajustes'}).click();
   await expect(page.locator('.account-email')).toHaveText(user.email);
   await expect(page.getByRole('button',{name:'Sincronizar ahora'})).toBeEnabled();
@@ -42,5 +43,6 @@ const { chromium, expect } = require('@playwright/test');
   console.log('PASS: invitation session, setup survives reload, password confirmation, authenticated app, logout hides app. Supabase mocked.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+
 
 
