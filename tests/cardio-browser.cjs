@@ -1,0 +1,68 @@
+const { chromium, expect } = require('@playwright/test');
+(async()=>{
+ const browser=await chromium.launch({channel:'msedge',headless:true});
+ try {
+  const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
+  const page=await context.newPage(), errors=[]; page.on('pageerror',e=>errors.push(e.message));
+  const email='password-test@example.test', password='  simulated-password-42  '; let attempts=0;const remote=new Map();
+  await page.route('https://*.supabase.co/**',async route=>{
+   const request=route.request(),url=request.url(),data=request.postDataJSON();
+   if(url.includes('/auth/v1/token?grant_type=password')){
+    attempts++; if(data.email!==email)throw Error('Unexpected email');
+    if(attempts===1)return route.fulfill({status:400,json:{code:'invalid_credentials',error_code:'invalid_credentials',msg:'Invalid login credentials'}});
+    if(data.password!==password)throw Error('Password was modified');
+    const id='01234567-89ab-4def-8123-456789abcdef',exp=Math.floor(Date.now()/1000)+3600;
+    const jwt=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url')+'.'+Buffer.from(JSON.stringify({sub:id,exp,role:'authenticated'})).toString('base64url')+'.signature';
+    return route.fulfill({json:{access_token:jwt,refresh_token:'fake-test-refresh',expires_in:3600,token_type:'bearer',user:{id,email,aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},created_at:new Date().toISOString()}}});
+   }
+   if(url.includes('/rest/v1/training_records'))return route.fulfill({json:[...remote.values()]});
+   if(url.includes('/rest/v1/rpc/apply_training_record')){const record={id:data.record_id,kind:data.record_kind,data:data.record_data,revision:data.expected_revision+1,deleted:data.is_deleted};remote.set(record.id,record);return route.fulfill({json:{ok:true,record}});}
+   throw Error('Unexpected request (email/redirect flows must not be used): '+url);
+  });
+  await page.goto(process.env.TEST_URL||'http://localhost:3001');
+  await expect(page.getByRole('button',{name:'Cuenta y ajustes'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Iniciar sesión',exact:true})).toBeDisabled();
+  await page.getByLabel('Tu correo',{exact:true}).fill(email);
+  await page.locator('input[name=password]').fill('incorrect-test-password');
+  await page.getByRole('button',{name:'Mostrar contraseña',exact:true}).click();await expect(page.locator('input[name=password]')).toHaveAttribute('type','text');
+  await page.getByRole('button',{name:'Ocultar contraseña',exact:true}).click();await expect(page.locator('input[name=password]')).toHaveAttribute('type','password');
+  await context.setOffline(true);await expect(page.getByRole('button',{name:'Iniciar sesión',exact:true})).toBeDisabled();await context.setOffline(false);
+  await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await expect(page.locator('.error')).toContainText('no son correctos');
+  await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
+  await page.reload();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
+  await page.getByRole('button',{name:'Cerrar',exact:true}).click();
+  await page.locator('.mobile-nav').getByRole('button',{name:'Cardio',exact:true}).click();
+  await page.getByRole('button',{name:'Registrar',exact:true}).click();
+  await page.getByLabel('Distancia (km, opcional)',{exact:true}).fill('5,2');
+  await page.getByLabel('Minutos',{exact:true}).fill('31');
+  await page.getByLabel('Segundos',{exact:true}).fill('12');
+  await page.getByLabel('Notas',{exact:true}).fill('Salida de prueba');
+  await page.getByRole('button',{name:'Guardar actividad',exact:true}).click();
+  await expect(page.locator('.cardio-record')).toContainText('6:00 min/km');
+  await page.reload();
+  await page.locator('.mobile-nav').getByRole('button',{name:'Cardio',exact:true}).click();
+  await expect(page.locator('.cardio-record')).toContainText('Salida de prueba');
+  await context.setOffline(true);
+  await page.getByRole('button',{name:/Editar Correr/}).click();
+  await page.getByLabel('Distancia (km, opcional)',{exact:true}).fill('');
+  await page.getByRole('button',{name:'Guardar actividad',exact:true}).click();
+  await expect(page.locator('.cardio-record')).toContainText('Sin distancia');
+  await context.setOffline(false);
+  await page.locator('.mobile-nav').getByRole('button',{name:'Calendario',exact:true}).click();
+  await expect(page.getByText('Cardio realizado',{exact:true})).toBeVisible();
+  await page.locator('.mobile-nav').getByRole('button',{name:'Cardio',exact:true}).click();
+  for (const width of [320,390,1280]) {
+   await page.setViewportSize({width,height:844});
+   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Horizontal overflow '+width);
+  }
+  await page.getByRole('button',{name:/Eliminar Correr/}).click();
+  await page.getByRole('button',{name:'Eliminar actividad',exact:true}).click();
+  await expect(page.locator('.cardio-record')).toHaveCount(0);
+  if(await page.evaluate(p=>JSON.stringify({...localStorage,...sessionStorage}).includes(p),password))throw Error('Password persisted in browser storage');
+  if(context.pages().length!==1||new URL(page.url()).pathname!=='/')throw Error('Login left the app');
+  if(errors.length)throw Error(errors.join('\n'));
+  console.log('PASS: cardio CRUD, decimal comma, pace, offline edit, reload, calendar and responsive widths; email/password, empty/offline validation, reveal toggle, invalid credentials retry, same-app login, persisted session after reload, no stored password, no email requests. Supabase mocked.');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1);});
+
+

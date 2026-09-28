@@ -78,3 +78,11 @@ Configuración administrativa necesaria (no se modifica desde el navegador):
 La pantalla cerrada no sustituye la configuración de registros en Supabase. Las cuentas que ya existían conservan acceso. No se borran los datos locales previos; su importación continúa siendo una acción manual desde Cuenta y respaldo.
 
 Fuentes: https://supabase.com/docs/guides/auth/general-configuration y https://supabase.com/docs/guides/auth/auth-smtp
+
+## Cardio
+
+Registro manual por cuenta de correr, cinta, caminatas, bicicleta, bici fija, elíptica, remo, natación y otro. Duración obligatoria; distancia en km, RPE y notas opcionales. Ritmo para correr/cinta/caminata y velocidad para bicicleta. El resumen semanal va desde el lunes hasta hoy y respeta el filtro de actividad. Los registros realizados aparecen en el calendario; no incluye GPS ni planificación de cardio.
+
+Para proyectos existentes ejecutar `supabase/cardio-migration.sql` antes de publicar. Mantiene las políticas RLS. Los respaldos incluyen los nuevos registros; los respaldos anteriores siguen siendo compatibles. Actualizar todos los dispositivos antes de usar cardio.
+
+Validación: `npm test`; `TEST_URL=http://localhost:3002 node tests/cardio-browser.cjs` (variable de entorno según shell). La prueba de navegador usa Supabase simulado y no escribe en cuentas reales.

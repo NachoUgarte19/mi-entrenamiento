@@ -1189,3 +1189,24 @@ nav button[aria-current="page"] {
 .access-card h1 { font-size: 24px; margin: 16px 0 8px; }
 .access-card > .muted { margin-bottom: 24px; }
 .access-logo { border-radius: 16px; }
+
+.cardio-page { display: grid; gap: 20px; }
+.cardio-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.cardio-heading h1 { margin:0 0 6px; }
+.cardio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.cardio-stats > div { background:white; border:1px solid #e5e7eb; border-radius:16px; padding:18px 10px; display:grid; gap:6px; }
+.cardio-stats strong { font-size:24px; color:var(--primary); }
+.cardio-stats span { font-size:12px; color:#64748b; }
+.cardio-history { display:grid; gap:12px; }
+.cardio-record { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:18px; border:1px solid #e5e7eb; border-radius:16px; background:white; }
+.cardio-record h3 { margin:0 0 6px; }
+.cardio-record small { color:#64748b; }
+.cardio-notes { white-space:pre-wrap; overflow-wrap:anywhere; }
+.cardio-record > div:first-child { min-width:0; }
+.cardio-time { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; border:0; padding:0; min-width:0; }
+.cardio-time legend { margin-bottom:10px; }
+.cardio-time input { min-width:0; width:100%; }
+.calendar-dots .cardio-dot { background:#0891b2; }
+.mobile-nav nav { grid-template-columns:repeat(5,minmax(0,1fr)); }
+@media(max-width:360px) { .mobile-nav nav button { font-size:10px; padding-inline:2px; } .cardio-record { padding:12px; } }
+.cardio-legend { color:#0e7490; background:#ecfeff; padding:4px 8px; border-radius:6px; font-size:12px; }

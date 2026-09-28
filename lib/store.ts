@@ -106,7 +106,7 @@ export async function importRecords(
 }
 function decodeCloud(row: Record<string, unknown>): CloudRecord {
   const kind = row.kind as Kind;
-  if (!["exercise", "routine", "plan", "session"].includes(kind))
+  if (!["exercise", "routine", "plan", "session", "cardio"].includes(kind))
     throw Error("La nube devolvió un tipo de registro desconocido.");
   return {
     id: String(row.id),
@@ -242,3 +242,4 @@ export async function resolveConflict(
   });
   notify();
 }
+

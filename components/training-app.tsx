@@ -1,4 +1,7 @@
 "use client";
+import { CardioTab } from "./cardio";
+import { type Cardio, cardioActivities, cardioDuration } from "@/lib/model";
+import { Activity } from "lucide-react";
 import { SetPassword } from "./set-password";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -63,7 +66,7 @@ import { ExerciseEditor, RoutineEditor } from "./editors";
 import { SessionView } from "./session";
 import { PasswordAccess } from "./password-access";
 
-type Tab = "train" | "routines" | "calendar" | "progress";
+type Tab = "train" | "routines" | "calendar" | "progress" | "cardio";
 type PlanDraft = { id?: string; date: string; routineId: string };
 function Badge({ category }: { category: Category }) {
   return <span className={"badge " + category}>{labels[category]}</span>;
@@ -137,6 +140,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
   const routines = visible
     .filter((r) => r.kind === "routine")
     .map((r) => r.data as Routine);
+  const cardio = visible.filter(r => r.kind === "cardio").map(r => r.data as Cardio);
   const plans = visible
     .filter((r) => r.kind === "plan")
     .map((r) => r.data as Plan);
@@ -543,6 +547,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
               />
             ) : (
               <>
+                {tab === "cardio" && <CardioTab items={cardio} onSave={(c, deleted) => persist("cardio", c, deleted)} />}
                 {tab === "train" && (
                   <>
                     <Header
@@ -931,12 +936,13 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                               <button
                                 className={date === today ? "today" : ""}
                                 key={date}
-                                aria-label={`${prettyDate(date)}, ${ps.length} planificados, ${ss.length} realizados`}
+                                aria-label={`${prettyDate(date)}, ${ps.length} planificados, ${ss.length} realizados, ${cardio.filter(c => c.date === date).length} de cardio`}
                                 aria-pressed={date === selectedDate}
                                 onClick={() => setSelectedDate(date)}
                               >
                                 {i + 1}
                                 <span className="calendar-dots">
+                                  {cardio.some(c => c.date === date) && <i className="cardio-dot" />}
                                   {categories.map((c) => (
                                     <i key={c} className={c} />
                                   ))}
@@ -945,7 +951,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                             );
                           })}
                         </div>
-                        <div className="legend">
+                        <div className="legend"><span className="cardio-legend">Cardio</span>
                           {(["pull", "push", "full", "class"] as const).map(
                             (c) => (
                               <Badge key={c} category={c} />
@@ -956,6 +962,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                       <section className="day-agenda">
                         <h2>{prettyDate(selectedDate)}</h2>
                         {dayPlans.map(planCard)}
+                        {cardio.filter(c => c.date === selectedDate).map(c => <button className="agenda-row" key={c.id} onClick={() => setTab("cardio")}><div><small>Cardio realizado</small><strong>{cardioActivities[c.activity]}</strong><span>{cardioDuration(c.durationSeconds)}{c.distanceKm !== null && ` · ${c.distanceKm} km`}</span></div><Activity size={19}/></button>)}
                         {completed
                           .filter(
                             (s) =>
@@ -976,7 +983,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                             </button>
                           ))}
                         {!dayPlans.length &&
-                          !completed.some((s) => s.date === selectedDate) && (
+                          !completed.some((s) => s.date === selectedDate) && !cardio.some(c => c.date === selectedDate) && (
                             <div className="empty compact">
                               <CalendarDays size={28} />
                               <h3>Un día libre</h3>
@@ -1434,6 +1441,7 @@ function Nav({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
           { id: "train", label: "Entrenar", icon: Play },
           { id: "routines", label: "Rutinas", icon: BookOpen },
           { id: "calendar", label: "Calendario", icon: CalendarDays },
+          { id: "cardio", label: "Cardio", icon: Activity },
           { id: "progress", label: "Progreso", icon: TrendingUp },
         ] as const
       ).map((t) => (
@@ -1484,6 +1492,8 @@ function Week({
     </div>
   );
 }
+
+
 
 
 

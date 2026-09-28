@@ -2,7 +2,7 @@
 create table if not exists public.training_records (
  owner_id uuid not null references auth.users(id) on delete cascade,
  id text not null,
- kind text not null check (kind in ('exercise','routine','plan','session')),
+ kind text not null check (kind in ('exercise','routine','plan','session','cardio')),
  data jsonb not null,
  revision bigint not null default 0,
  deleted boolean not null default false,
@@ -44,3 +44,4 @@ end;
 $$;
 revoke all on function public.apply_training_record(text,text,jsonb,boolean,bigint,uuid) from public,anon;
 grant execute on function public.apply_training_record(text,text,jsonb,boolean,bigint,uuid) to authenticated;
+

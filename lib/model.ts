@@ -81,8 +81,42 @@ export const sessionSchema = z.object({
   notes: z.string(),
 });
 export type TrainingSession = z.infer<typeof sessionSchema>;
-export type Kind = "exercise" | "routine" | "plan" | "session";
-export type Payload = Exercise | Routine | Plan | TrainingSession;
+export const cardioActivities = {
+  run: "Correr", treadmill: "Cinta", walk: "Caminata", bike: "Bicicleta",
+  indoorBike: "Bici fija", elliptical: "Elíptica", rowing: "Remo", swim: "Natación", other: "Otro",
+} as const;
+export const cardioSchema = z.object({
+  id: z.string(),
+  activity: z.enum(["run", "treadmill", "walk", "bike", "indoorBike", "elliptical", "rowing", "swim", "other"]),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(d => {
+    const parsed = new Date(d + "T12:00:00");
+    return !Number.isNaN(parsed.getTime()) && localDate(parsed) === d;
+  }, "Fecha inválida"),
+  distanceKm: z.number().positive().max(2000).nullable(),
+  durationSeconds: z.number().int().positive().max(604800),
+  rpe: z.number().min(1).max(10).nullable(),
+  notes: z.string().max(4000),
+});
+export type Cardio = z.infer<typeof cardioSchema>;
+export function cardioPace(c: Cardio) {
+  if (!c.distanceKm) return "Sin distancia";
+  if (["bike", "indoorBike"].includes(c.activity)) return `${(c.distanceKm * 3600 / c.durationSeconds).toLocaleString("es-AR", { maximumFractionDigits: 1 })} km/h`;
+  if (!["run", "walk", "treadmill"].includes(c.activity)) return "";
+  const seconds = Math.round(c.durationSeconds / c.distanceKm);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} min/km`;
+}
+export function cardioDuration(seconds: number) {
+  return `${Math.floor(seconds / 3600) ? Math.floor(seconds / 3600) + ":" : ""}${String(Math.floor(seconds / 60) % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+export function cardioWeek(items: Cardio[], today = localDate()) {
+  const monday = new Date(today + "T12:00:00");
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const start = localDate(monday);
+  const week = items.filter(c => c.date >= start && c.date <= today);
+  return { count: week.length, km: week.reduce((n, c) => n + (c.distanceKm ?? 0), 0), minutes: week.reduce((n,c) => n + c.durationSeconds / 60, 0) };
+}
+export type Kind = "exercise" | "routine" | "plan" | "session" | "cardio";
+export type Payload = Exercise | Routine | Plan | TrainingSession | Cardio;
 export type CloudRecord = {
   id: string;
   kind: Kind;
@@ -164,6 +198,7 @@ export function validatePayload(kind: Kind, data: unknown): Payload {
     routine: routineSchema,
     plan: planSchema,
     session: sessionSchema,
+    cardio: cardioSchema,
   }[kind].parse(data);
 }
 export function backupParse(raw: unknown) {
@@ -173,7 +208,7 @@ export function backupParse(raw: unknown) {
       records: z
         .array(
           z.object({
-            kind: z.enum(["exercise", "routine", "plan", "session"]),
+            kind: z.enum(["exercise", "routine", "plan", "session", "cardio"]),
             data: z.unknown(),
           }),
         )
@@ -185,3 +220,4 @@ export function backupParse(raw: unknown) {
     data: validatePayload(r.kind, r.data),
   }));
 }
+
