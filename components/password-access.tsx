@@ -9,7 +9,7 @@ function accessError(error: unknown) {
   if (e.code === "invalid_credentials")
     return "El correo o la contraseña no son correctos. Revisalos e intentá de nuevo.";
   if (e.code === "email_not_confirmed")
-    return "Tu correo todavía no está confirmado. Revisá el estado de tu usuario en Supabase.";
+    return "Tu correo todavía no está confirmado. Abrí el enlace de tu invitación o contactá a quien te dio acceso.";
   if (e.status === 429)
     return "Demasiados intentos. Esperá unos minutos antes de volver a entrar.";
   return "No pudimos iniciar sesión. Revisá la conexión e intentá nuevamente.";
@@ -130,3 +130,4 @@ export function PasswordAccess({
     </form>
   );
 }
+

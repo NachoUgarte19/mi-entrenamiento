@@ -6,3 +6,4 @@ out/
 *.tsbuildinfo
 test-results/
 .vercel/
+.next-previous-invites/

@@ -1,4 +1,2 @@
-import TrainingApp from "@/components/training-app";
-export default function Page() {
-  return <TrainingApp />;
-}
+import AccountGate from "@/components/account-gate";
+export default function Page() { return <AccountGate />; }

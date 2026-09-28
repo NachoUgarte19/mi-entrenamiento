@@ -20,15 +20,15 @@ const { chromium, expect } = require('@playwright/test');
    throw Error('Unexpected request (email/redirect flows must not be used): '+url);
   });
   await page.goto(process.env.TEST_URL||'http://localhost:3001');
-  await page.getByRole('button',{name:'Cuenta y ajustes'}).click();
+  await expect(page.getByRole('button',{name:'Cuenta y ajustes'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Iniciar sesión',exact:true})).toBeDisabled();
   await page.getByLabel('Tu correo',{exact:true}).fill(email);
   await page.locator('input[name=password]').fill('incorrect-test-password');
   await page.getByRole('button',{name:'Mostrar contraseña',exact:true}).click();await expect(page.locator('input[name=password]')).toHaveAttribute('type','text');
   await page.getByRole('button',{name:'Ocultar contraseña',exact:true}).click();await expect(page.locator('input[name=password]')).toHaveAttribute('type','password');
   await context.setOffline(true);await expect(page.getByRole('button',{name:'Iniciar sesión',exact:true})).toBeDisabled();await context.setOffline(false);
-  await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await expect(page.locator('.modal .error')).toContainText('no son correctos');
-  await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await expect(page.locator('.account-email')).toHaveText(email);
+  await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await expect(page.locator('.error')).toContainText('no son correctos');
+  await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
   await page.reload();await page.getByRole('button',{name:'Cuenta y ajustes'}).click();await expect(page.locator('.account-email')).toHaveText(email);
   if(await page.evaluate(p=>JSON.stringify({...localStorage,...sessionStorage}).includes(p),password))throw Error('Password persisted in browser storage');
   if(context.pages().length!==1||new URL(page.url()).pathname!=='/')throw Error('Login left the app');
@@ -36,3 +36,4 @@ const { chromium, expect } = require('@playwright/test');
   console.log('PASS: email/password, empty/offline validation, reveal toggle, invalid credentials retry, same-app login, persisted session after reload, no stored password, no email requests. Supabase mocked.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+

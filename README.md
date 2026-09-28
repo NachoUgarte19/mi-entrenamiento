@@ -64,3 +64,17 @@ Las pruebas de navegador usan Playwright con Edge instalado: `node tests/browser
 
 Pendiente de validación con servicios reales: creación/invitación de cuenta, RLS y sincronización en dos dispositivos con un proyecto Supabase configurado. También debe verificarse instalación y recuperación de red en un iPhone físico.
 
+
+## Acceso por invitación
+
+En producción se exige una sesión antes de montar las pantallas de entrenamiento. Cada cuenta tiene su espacio de IndexedDB y las políticas RLS restringen los registros a auth.uid(). Las rutinas iniciales son plantillas independientes, nunca incluyen sesiones de otra cuenta.
+
+Configuración administrativa necesaria (no se modifica desde el navegador):
+1. Authentication > Sign In / Providers: desactivar Allow new users to sign up y Allow anonymous sign-ins.
+2. Authentication > URL Configuration: Site URL https://mi-entrenamiento-wine.vercel.app y permitir esa misma URL como redirect.
+3. Authentication > Users > Invite user: enviar invitación únicamente a la persona elegida. Al abrir el enlace elegirá su contraseña; luego podrá iniciar sesión en el acceso directo del iPhone con correo y contraseña.
+4. Los correos a personas externas requieren SMTP propio. Sin SMTP se puede crear manualmente el usuario confirmado desde Users con contraseña temporal compartida en privado; la persona debe cambiarla en Cuenta y respaldo > Cambiar contraseña. Nunca incorporar contraseñas o claves administrativas al repositorio.
+
+La pantalla cerrada no sustituye la configuración de registros en Supabase. Las cuentas que ya existían conservan acceso. No se borran los datos locales previos; su importación continúa siendo una acción manual desde Cuenta y respaldo.
+
+Fuentes: https://supabase.com/docs/guides/auth/general-configuration y https://supabase.com/docs/guides/auth/auth-smtp

@@ -1,4 +1,5 @@
 "use client";
+import { SetPassword } from "./set-password";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -94,10 +95,10 @@ function message(e: unknown) {
       : "No se pudo completar la operación.";
 }
 
-export default function TrainingApp() {
+export default function TrainingApp({ initialUser }: { initialUser: User }) {
   const [tab, setTab] = useState<Tab>("train"),
-    [owner, setOwner] = useState(LOCAL_OWNER),
-    [user, setUser] = useState<User | null>(null),
+    [owner, setOwner] = useState(initialUser.id),
+    [user, setUser] = useState<User | null>(initialUser),
     [data, setData] = useState<LocalRecord[]>([]),
     [ready, setReady] = useState(false),
     [fatal, setFatal] = useState(""),
@@ -1256,7 +1257,7 @@ export default function TrainingApp() {
               </div>
             ) : user ? (
               <>
-                <p className="account-email">{user.email}</p>
+                <p className="account-email">{user.email}</p><details><summary>Cambiar contraseña</summary><SetPassword onDone={() => setToast("Contraseña actualizada.")} /></details>
                 <Button
                   variant="secondary"
                   disabled={syncing || !online}
@@ -1483,4 +1484,6 @@ function Week({
     </div>
   );
 }
+
+
 

@@ -1183,3 +1183,9 @@ nav button[aria-current="page"] {
 }
 
 .brand-icon { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
+
+.access-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+.access-card { width: 100%; max-width: 420px; padding: 28px; background: white; border-radius: 20px; border: 1px solid #e5e7eb; }
+.access-card h1 { font-size: 24px; margin: 16px 0 8px; }
+.access-card > .muted { margin-bottom: 24px; }
+.access-logo { border-radius: 16px; }
