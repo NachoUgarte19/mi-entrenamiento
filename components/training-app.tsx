@@ -67,6 +67,7 @@ import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { ExerciseEditor, RoutineEditor } from "./editors";
 import { SessionView } from "./session";
+import { RecordedSessionEditor } from "./recorded-session";
 import { PasswordAccess } from "./password-access";
 
 type Tab = "train" | "routines" | "calendar" | "progress" | "cardio";
@@ -127,6 +128,10 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
       data: Payload;
       name: string;
     } | null>(null);
+  const [recording, setRecording] = useState<{
+    date: string;
+    plan?: Plan;
+  } | null>(null);
   const [restore, setRestore] = useState<ReturnType<typeof backupParse> | null>(
       null,
     ),
@@ -459,6 +464,18 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
             {inProgress ? "Continuar" : "Empezar sesión"}
           </Button>
         )}
+        {!finished &&
+          !inProgress &&
+          p.date <= today &&
+          (!p.routineId || routine) && (
+            <Button
+              variant="secondary"
+              className="full"
+              onClick={() => setRecording({ date: p.date, plan: p })}
+            >
+              Cargar lo realizado
+            </Button>
+          )}
       </article>
     );
   }
@@ -1036,6 +1053,15 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                       </section>
                       <section className="day-agenda">
                         <h2>{prettyDate(selectedDate)}</h2>
+                        {selectedDate <= today && (
+                          <Button
+                            className="full"
+                            onClick={() => setRecording({ date: selectedDate })}
+                          >
+                            <Plus size={17} />
+                            Cargar entrenamiento realizado
+                          </Button>
+                        )}
                         {dayPlans.map(planCard)}
                         {cardio
                           .filter((c) => c.date === selectedDate)
@@ -1082,7 +1108,10 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                             <div className="empty compact">
                               <CalendarDays size={28} />
                               <h3>Un día libre</h3>
-                              <p>Asigná una rutina o reservá tu clase.</p>
+                              <p>
+                                Asigná un entrenamiento o cargá lo que hiciste
+                                ese día.
+                              </p>
                             </div>
                           )}
                         <Button
@@ -1254,6 +1283,23 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
           initial={exerciseEdit ?? undefined}
           onSave={(e) => persist("exercise", e)}
           onClose={() => setExerciseEdit(undefined)}
+        />
+      )}
+      {recording && (
+        <RecordedSessionEditor
+          date={recording.date}
+          plan={recording.plan}
+          routines={routines}
+          exercises={exercises}
+          onSaveExercise={(exercise) => persist("exercise", exercise)}
+          onClose={() => setRecording(null)}
+          onSave={async (session) => {
+            await persist("session", session);
+            setSelectedDate(session.date);
+            setMonth(session.date.slice(0, 7));
+            setRecording(null);
+            setToast("Entrenamiento guardado en la fecha elegida.");
+          }}
         />
       )}
       {planEdit && (

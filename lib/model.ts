@@ -221,3 +221,39 @@ export function backupParse(raw: unknown) {
   }));
 }
 
+// Manual entries use the day of the workout for history and progress ordering.
+export function completeRecordedSession(
+  draft: TrainingSession,
+): TrainingSession {
+  const date = new Date(draft.date + "T12:00:00");
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(draft.date) ||
+    Number.isNaN(date.getTime()) ||
+    localDate(date) !== draft.date
+  )
+    throw Error("Elegí una fecha válida.");
+  if (draft.date > localDate())
+    throw Error(
+      "Solo podés cargar entrenamientos de hoy o de días anteriores.",
+    );
+  if (!draft.title.trim())
+    throw Error("Ingresá un nombre para el entrenamiento.");
+  if (!draft.items.length || draft.items.some((i) => !i.sets.length))
+    throw Error("Agregá al menos un ejercicio con una serie.");
+  if (draft.items.some((i) => i.sets.some((s) => !canComplete(s, i.exercise))))
+    throw Error(
+      "Completá las repeticiones, el tiempo y la carga de cada serie, o quitá las series que no hiciste.",
+    );
+  return sessionSchema.parse({
+    ...draft,
+    title: draft.title.trim(),
+    status: "completed",
+    startedAt: date.toISOString(),
+    finishedAt: date.toISOString(),
+    items: draft.items.map((i) => ({
+      ...i,
+      skipped: false,
+      sets: i.sets.map((s) => ({ ...s, done: true })),
+    })),
+  });
+}

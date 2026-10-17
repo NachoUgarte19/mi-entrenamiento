@@ -1223,3 +1223,19 @@ nav button[aria-current="page"] {
 .record-chip { background:#eaf3f0; padding:8px 12px; border-radius:8px; }
 .exercise-chart { display:block; width:100%; height:auto; margin:16px 0; }
 .cardio-bests p { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
+
+.recorded-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.recorded-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+.recorded-item h3 {
+  overflow-wrap: anywhere;
+}

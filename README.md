@@ -97,3 +97,9 @@ Validación: `npm test`; `TEST_URL=http://localhost:3002 node tests/cardio-brows
 - Nuevas cuentas vacías eligen empezar de cero o copiar plantillas. Cuentas ya inicializadas conservan sus datos. La elección vacía se recuerda por cuenta en el dispositivo; si aún no hay registros sincronizados, otro dispositivo vuelve a ofrecer la elección.
 
 Pruebas adicionales: `node tests/progress-browser.cjs` con TEST_URL configurado; acceso y nube simulados, sin escribir datos reales. `npm test` cubre selección de historial, precarga, métricas y plantillas.
+
+## Carga de entrenamientos realizados
+
+En Calendario, elegir hoy o una fecha anterior y tocar “Cargar entrenamiento realizado”. Permite un entrenamiento Libre, una Clase o una rutina existente, agregar ejercicios de la biblioteca o crearlos, ajustar las series realizadas y cargar repeticiones/tiempo, carga y RIR/RPE opcionales. Se guarda como completado en esa fecha y aparece en historial y progreso, incluso si hay otra sesión en curso. Los planes pendientes de fechas pasadas también ofrecen “Cargar lo realizado”. Cancelar no crea una sesión; los ejercicios nuevos se conservan en la biblioteca. Usa el guardado local y la sincronización existentes, sin migración de base de datos.
+
+Validación: `npm test` y `node tests/recorded-session-browser.cjs` con TEST_URL configurado (Supabase simulado).
