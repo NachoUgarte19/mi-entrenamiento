@@ -1,4 +1,5 @@
 "use client";
+import { mobilityRoutine } from "@/lib/mobility";
 import { ProgressDetails } from "./progress-details";
 import { CardioTab } from "./cardio";
 import { type Cardio, cardioActivities, cardioDuration } from "@/lib/model";
@@ -50,6 +51,7 @@ import {
   type TrainingSession,
 } from "@/lib/model";
 import {
+  addMobilityRoutine,
   needsOnboarding,
   chooseStart,
   cloudConfigured,
@@ -792,6 +794,34 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                         <Plus size={20} />
                       </Button>
                     </Header>
+                    {!library &&
+                      !routines.some((r) => r.id === mobilityRoutine.id) && (
+                        <div className="notice form-grid">
+                          <div>
+                            <h3>{mobilityRoutine.name}</h3>
+                            <p>
+                              5 min de movilidad, 7 min de compresiones de L y 3
+                              min de flexibilidad.
+                            </p>
+                          </div>
+                          <Button
+                            variant="secondary"
+                            disabled={actionBusy}
+                            onClick={() =>
+                              void run(async () => {
+                                await addMobilityRoutine(owner);
+                                setData(await records(owner));
+                                setToast(
+                                  "Rutina de movilidad agregada a tu biblioteca.",
+                                );
+                              })
+                            }
+                          >
+                            <Plus size={17} />
+                            Agregar rutina de movilidad
+                          </Button>
+                        </div>
+                      )}
                     <div className="segmented" aria-label="Tipo de biblioteca">
                       <button
                         aria-pressed={!library}

@@ -9,6 +9,7 @@ import {
   validatePayload,
 } from "./model";
 import { seedExercises, seedRoutines } from "./seeds";
+import { mobilityExercises, mobilityRoutine } from "./mobility";
 
 class TrainingDB extends Dexie {
   records!: Table<LocalRecord, [string, string]>;
@@ -274,6 +275,33 @@ export async function chooseStart(owner: string, templates: boolean) {
             });
       }
     await db.meta.put({ key: "onboarding:" + owner, value: "done" });
+  });
+  notify();
+}
+
+// Existing accounts can add the template without replacing customized exercises.
+export async function addMobilityRoutine(owner: string) {
+  const entries = [
+    ...mobilityExercises.map((data) => ({ kind: "exercise" as const, data })),
+    { kind: "routine" as const, data: mobilityRoutine },
+  ];
+  await db.transaction("rw", db.records, async () => {
+    for (const entry of entries) {
+      const data = validatePayload(entry.kind, entry.data);
+      const old = await db.records.get([owner, data.id]);
+      if (old && !old.deleted) continue;
+      await db.records.put({
+        owner,
+        id: data.id,
+        kind: entry.kind,
+        data,
+        revision: old?.revision ?? 0,
+        dirty: true,
+        deleted: false,
+        mutation: uid(),
+        conflict: old?.conflict,
+      });
+    }
   });
   notify();
 }

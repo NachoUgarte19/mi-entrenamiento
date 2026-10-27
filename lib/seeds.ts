@@ -1,3 +1,4 @@
+import { mobilityExercises, mobilityRoutine } from "./mobility";
 import type { Exercise, Routine, RoutineItem } from "./model";
 const ex = (
   id: string,
@@ -102,6 +103,7 @@ export const seedExercises: Exercise[] = [
     "Con doble mancuerna. Confirmá si tu objetivo es total o por lado.",
   ),
   ex("jump-squat", "Sentadillas con despegue", "Piernas"),
+  ...mobilityExercises,
 ];
 let i = 0;
 const it = (
@@ -206,4 +208,5 @@ export const seedRoutines: Routine[] = [
       close(),
     ],
   },
+  mobilityRoutine,
 ];
