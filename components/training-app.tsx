@@ -1,4 +1,6 @@
 "use client";
+import { normalizeSearch } from "@/lib/exercise-search";
+import { SearchPicker } from "./search-picker";
 import { mobilityRoutine } from "@/lib/mobility";
 import { ProgressDetails } from "./progress-details";
 import { CardioTab } from "./cardio";
@@ -402,9 +404,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
     ).getDate(),
     offset = (monthStart.getDay() + 6) % 7;
   const shownExercises = exercises.filter((e) =>
-    (e.name + " " + e.group)
-      .toLocaleLowerCase()
-      .includes(search.toLocaleLowerCase()),
+    normalizeSearch(e.name + " " + e.group).includes(normalizeSearch(search)),
   );
   function planCard(p: Plan) {
     const routine = routines.find((r) => r.id === p.routineId),
@@ -620,6 +620,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                 key={view.id}
                 initial={view}
                 exercises={exercises}
+                onSaveExercise={(exercise) => persist("exercise", exercise)}
                 history={sessions}
                 onSave={(s) => persist("session", s)}
                 onBack={() => setActiveView(null)}
@@ -1194,28 +1195,38 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                         <small>completadas</small>
                       </div>
                     </div>
-                    <label className="search-label">
-                      Consultar un ejercicio
-                      <select
+                    <div className="progress-search panel">
+                      <h2>Seguí tus progresiones</h2>
+                      <p className="muted">
+                        Buscá un ejercicio para ver cómo cambian tus reps,
+                        tiempos y kilos. Las variantes se comparan por separado.
+                      </p>
+                      <SearchPicker
+                        label="Consultar un ejercicio"
+                        options={[
+                          { id: "", name: "Todos los entrenamientos" },
+                          ...Array.from(
+                            new Map(
+                              completed
+                                .flatMap((s) => s.items)
+                                .map((i) => [
+                                  i.exercise.id,
+                                  {
+                                    id: i.exercise.id,
+                                    name: i.exercise.name,
+                                    detail: i.exercise.group,
+                                  },
+                                ]),
+                            ).values(),
+                          ),
+                        ]}
                         value={metricExercise}
-                        onChange={(e) => setMetricExercise(e.target.value)}
-                      >
-                        <option value="">Todos los entrenamientos</option>
-                        {Array.from(
-                          new Map(
-                            completed
-                              .flatMap((s) => s.items)
-                              .map((i) => [i.exercise.id, i.exercise.name]),
-                          ).entries(),
-                        ).map(([id, name]) => (
-                          <option key={id} value={id}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
+                        onSelect={setMetricExercise}
+                        placeholder="Ej. L-sit, dominadas, pike…"
+                      />
+                    </div>
                     <ProgressDetails
+                      key={metricExercise}
                       sessions={completed}
                       cardio={cardio}
                       exerciseId={metricExercise}
@@ -1245,6 +1256,11 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
                               .filter((i) => i.exercise.id === metricExercise)
                               .map((i) => (
                                 <p className="history-values" key={i.id}>
+                                  {i.progression && (
+                                    <strong className="history-progression">
+                                      {i.progression}
+                                    </strong>
+                                  )}
                                   {i.sets
                                     .filter((set) => set.done)
                                     .map(
@@ -1304,6 +1320,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
         <RoutineEditor
           initial={routineEdit ?? undefined}
           exercises={exercises}
+          onSaveExercise={(exercise) => persist("exercise", exercise)}
           onSave={(r) => persist("routine", r)}
           onClose={() => setRoutineEdit(undefined)}
         />
@@ -1319,6 +1336,7 @@ export default function TrainingApp({ initialUser }: { initialUser: User }) {
         <RecordedSessionEditor
           date={recording.date}
           plan={recording.plan}
+          history={sessions}
           routines={routines}
           exercises={exercises}
           onSaveExercise={(exercise) => persist("exercise", exercise)}

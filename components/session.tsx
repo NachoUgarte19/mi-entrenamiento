@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Plus, Timer, X } from "lucide-react";
 import {
   canComplete,
+  prettyDate,
   makeSessionItem,
   uid,
   type Exercise,
@@ -13,6 +14,9 @@ import {
 import { previousItem, repeatPrevious } from "@/lib/progress";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
+import { SearchPicker } from "./search-picker";
+import { ProgressionField } from "./progression-field";
+import { ExerciseEditor } from "./editors";
 
 const units = {
   reps: "Reps",
@@ -30,6 +34,7 @@ const loads = {
 export function SessionView({
   initial,
   exercises,
+  onSaveExercise,
   history,
   onSave,
   onBack,
@@ -37,6 +42,7 @@ export function SessionView({
 }: {
   initial: TrainingSession;
   exercises: Exercise[];
+  onSaveExercise: (exercise: Exercise) => Promise<void>;
   history: TrainingSession[];
   onSave: (s: TrainingSession) => Promise<void>;
   onBack: () => void;
@@ -47,7 +53,7 @@ export function SessionView({
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [add, setAdd] = useState(false),
-    [addId, setAddId] = useState(exercises[0]?.id ?? ""),
+    [newExercise, setNewExercise] = useState<string | null>(null),
     [confirm, setConfirm] = useState(false),
     [timerEnd, setTimerEnd] = useState<number | null>(null),
     [remaining, setRemaining] = useState(0),
@@ -129,6 +135,26 @@ export function SessionView({
     await queue.current;
     if (!failed.current) onBack();
   };
+  function addExercise(exercise: Exercise) {
+    const next = makeSessionItem(
+      {
+        id: uid(),
+        exerciseId: exercise.id,
+        sets: 3,
+        target: "Libre",
+        block: "Agregado en sesión",
+        rest: 90,
+        optional: false,
+        notes: "",
+        circuit: "",
+      },
+      exercise,
+    );
+    const items = [...current.current.items, next];
+    update({ ...current.current, items });
+    setIndex(items.length - 1);
+    setAdd(false);
+  }
   async function finish() {
     await queue.current;
     if (failed.current) return;
@@ -184,6 +210,7 @@ export function SessionView({
         </span>
       </div>
       <h1>{session.title}</h1>
+      <p className="muted session-date">{prettyDate(session.date)}</p>
       <div className="section-heading">
         <span className="muted">
           {done} de {total} series completadas
@@ -194,26 +221,31 @@ export function SessionView({
         value={done}
         aria-label="Series completadas"
       />
+      {error && (
+        <div className="error" role="alert">
+          {error}
+          {failed.current && (
+            <Button variant="secondary" onClick={() => update(current.current)}>
+              Reintentar guardado
+            </Button>
+          )}
+        </div>
+      )}
       {item ? (
         <>
-          <label className="exercise-picker">
-            Ejercicio {index + 1} de {session.items.length}
-            <select
-              value={index}
-              onChange={(e) => {
-                setIndex(Number(e.target.value));
-                setError("");
-              }}
-            >
-              {session.items.map((i, n) => (
-                <option key={i.id} value={n}>
-                  {i.exercise.name}
-                  {i.skipped ? " · omitido" : ""}
-                  {i.optional ? " · opcional" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="exercise-picker">
+            <SearchPicker
+              label={"Ejercicio " + (index + 1) + " de " + session.items.length}
+              options={session.items.map((item, n) => ({
+                id: String(n),
+                name: item.exercise.name,
+                detail: item.skipped ? "Omitido" : item.block,
+              }))}
+              value={String(index)}
+              onSelect={(id) => setIndex(Number(id))}
+              placeholder="Buscar en esta sesión…"
+            />
+          </div>
           <section className="panel exercise-panel">
             <div className="eyebrow">
               {item.block}
@@ -221,8 +253,30 @@ export function SessionView({
             </div>
             <h2>{item.exercise.name}</h2>
             <p className="muted">
-              {item.sets.length} series · {item.target}
+              {item.sets.length} {item.sets.length === 1 ? "serie" : "series"} ·{" "}
+              {item.target}
             </p>
+            {readonly ? (
+              <p className="progression-summary">
+                <strong>Variante:</strong>{" "}
+                {item.progression || "Sin variante registrada"}
+              </p>
+            ) : (
+              <ProgressionField
+                value={item.progression ?? ""}
+                suggestions={history
+                  .flatMap((s) => s.items)
+                  .filter((i) => i.exercise.id === item.exercise.id)
+                  .map((i) => i.progression ?? "")}
+                onChange={(progression) => itemUpdate({ ...item, progression })}
+              />
+            )}
+            {!readonly && !item.skipped && (
+              <p className="result-help">
+                Cargá las reps o el tiempo y tocá ✓ para marcar cada serie
+                realizada. Podés ver tus mejoras en Progreso.
+              </p>
+            )}
             {item.circuit && (
               <p className="circuit-label">
                 {item.circuit} · alterná ejercicios por ronda
@@ -237,7 +291,8 @@ export function SessionView({
             )}
             {previous && (
               <p className="previous">
-                Última vez:{" "}
+                Última vez ({previous.progression || "sin variante registrada"}
+                ):{" "}
                 {previous.sets
                   .filter((s) => s.done)
                   .map(
@@ -347,7 +402,14 @@ export function SessionView({
                         onClick={() => {
                           if (!set.done && !canComplete(set, item.exercise)) {
                             setError(
-                              "Cargá el resultado y la carga. Para peso corporal sin lastre, ingresá 0 kg.",
+                              item.exercise.load === "none"
+                                ? "Cargá las repeticiones o el tiempo antes de completar la serie."
+                                : "Cargá el resultado y la carga. Para peso corporal sin lastre, ingresá 0 kg.",
+                            );
+                            requestAnimationFrame(() =>
+                              document
+                                .querySelector('.session-view > [role="alert"]')
+                                ?.scrollIntoView({ block: "nearest" }),
                             );
                             return;
                           }
@@ -550,8 +612,11 @@ export function SessionView({
         </>
       ) : (
         <div className="empty">
-          <h2>Empezá tu clase</h2>
-          <p>Sumá los ejercicios a medida que los hagas.</p>
+          <h2>Cargá tu primer ejercicio</h2>
+          <p>
+            Buscá por nombre y anotá la variante, las reps o el tiempo que
+            hiciste.
+          </p>
         </div>
       )}
       {!readonly && (
@@ -570,16 +635,6 @@ export function SessionView({
           }
         />
       </details>
-      {error && (
-        <div className="error" role="alert">
-          {error}
-          {failed.current && (
-            <Button variant="secondary" onClick={() => update(current.current)}>
-              Reintentar guardado
-            </Button>
-          )}
-        </div>
-      )}
       {!readonly && (
         <Button
           variant="ghost"
@@ -591,49 +646,32 @@ export function SessionView({
         </Button>
       )}
       {add && (
-        <Modal title="Agregar ejercicio" onClose={() => setAdd(false)}>
-          <div className="form-grid">
-            <label>
-              Ejercicio
-              <select value={addId} onChange={(e) => setAddId(e.target.value)}>
-                {exercises.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              disabled={!addId}
-              onClick={() => {
-                const ex = exercises.find((e) => e.id === addId);
-                if (!ex) return;
-                const next = makeSessionItem(
-                  {
-                    id: uid(),
-                    exerciseId: ex.id,
-                    sets: 3,
-                    target: "Libre",
-                    block: "Agregado en sesión",
-                    rest: 90,
-                    optional: false,
-                    notes: "",
-                    circuit: "",
-                  },
-                  ex,
-                );
-                update({
-                  ...current.current,
-                  items: [...current.current.items, next],
-                });
-                setIndex(current.current.items.length - 1);
-                setAdd(false);
-              }}
-            >
-              Agregar a esta sesión
-            </Button>
-          </div>
+        <Modal
+          title="Agregar ejercicio"
+          description="Escribí y tocá una sugerencia para agregarla a esta sesión."
+          onClose={() => setAdd(false)}
+        >
+          <SearchPicker
+            label="Buscar ejercicio"
+            options={exercises.map((e) => ({ ...e, detail: e.group }))}
+            resetAfterSelect
+            onSelect={(id) => {
+              const exercise = exercises.find((e) => e.id === id);
+              if (exercise) addExercise(exercise);
+            }}
+            onCreate={setNewExercise}
+          />
         </Modal>
+      )}
+      {newExercise !== null && (
+        <ExerciseEditor
+          initialName={newExercise}
+          onClose={() => setNewExercise(null)}
+          onSave={async (exercise) => {
+            await onSaveExercise(exercise);
+            addExercise(exercise);
+          }}
+        />
       )}
       {confirm && (
         <Modal

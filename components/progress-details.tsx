@@ -7,7 +7,13 @@ import {
   cardioDuration,
   localDate,
 } from "@/lib/model";
-import { monthSummary, exercisePoints, bestCardioTimes } from "@/lib/progress";
+import { SearchPicker } from "./search-picker";
+import {
+  monthSummary,
+  exercisePoints,
+  bestCardioTimes,
+  progressionOptions,
+} from "@/lib/progress";
 export function ProgressDetails({
   sessions,
   cardio,
@@ -18,9 +24,14 @@ export function ProgressDetails({
   exerciseId: string;
 }) {
   const [month, setMonth] = useState(localDate().slice(0, 7)),
-    [metric, setMetric] = useState<"value" | "weight">("value");
+    [metric, setMetric] = useState<"value" | "weight">("value"),
+    [progression, setProgression] = useState<string | null>(null);
+  const variants = progressionOptions(sessions, exerciseId);
+  const chosen = variants.some((v) => v.id === progression)
+    ? progression!
+    : (variants.at(-1)?.id ?? "");
   const summary = monthSummary(sessions, cardio, month),
-    { exercise, points } = exercisePoints(sessions, exerciseId);
+    { exercise, points } = exercisePoints(sessions, exerciseId, chosen);
   const unit =
     exercise?.unit === "seconds"
       ? "segundos"
@@ -74,14 +85,29 @@ export function ProgressDetails({
           ))}
         </div>
       </div>
+      {variants.length > 0 && (
+        <div className="panel progression-filter">
+          <SearchPicker
+            label="Variante / progresión a comparar"
+            options={variants}
+            value={chosen}
+            onSelect={setProgression}
+            placeholder="Buscar una variante…"
+          />
+          <p className="muted">
+            Elegí la misma variante para comparar tus repeticiones, tiempos y
+            kilos.
+          </p>
+        </div>
+      )}
       {exercise && (
         <div className="panel">
           <h2>{exercise.name}: evolución y récords</h2>
           <p className="muted">
-            Mejor serie de cada sesión. Solo series completadas con la misma
-            unidad y tipo de carga.
+            Resultados de las series completadas con la misma variante, unidad y
+            tipo de carga.
           </p>
-          <div className="actions">
+          <div className="actions wrap">
             {values.length > 0 && exercise.unit !== "check" && (
               <span className="record-chip">
                 Máximo: {Math.max(...values)} {unit}
@@ -119,6 +145,17 @@ export function ProgressDetails({
                 </option>
               </select>
             </label>
+          )}
+          {series.length >= 2 && (
+            <p className="progress-change">
+              Última sesión:{" "}
+              <strong>
+                {series.at(-1)!.y.toLocaleString("es-AR")}{" "}
+                {selectedMetric === "weight" ? "kg" : unit}
+              </strong>
+              {" · "}anterior: {series.at(-2)!.y.toLocaleString("es-AR")}{" "}
+              {selectedMetric === "weight" ? "kg" : unit}
+            </p>
           )}
           {series.length > 0 ? (
             <>
@@ -179,7 +216,11 @@ export function ProgressDetails({
               </details>
             </>
           ) : (
-            <p>Completá series para ver tu evolución.</p>
+            <p>
+              {exercise.unit === "check"
+                ? points.length + " sesiones registradas como realizadas."
+                : "Completá series de esta variante para ver tu evolución."}
+            </p>
           )}
         </div>
       )}

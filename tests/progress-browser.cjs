@@ -39,7 +39,8 @@ for(const [kind,data] of [['exercise',exercise],['routine',routine],['session',s
   await page.getByRole('button',{name:'Cerrar',exact:true}).click();
   const nav=async name=>page.locator('.mobile-nav').getByRole('button',{name,exact:true}).click();
   await nav('Progreso');
-  await page.getByLabel('Consultar un ejercicio').selectOption('test-pull');
+  await page.getByRole('combobox',{name:'Consultar un ejercicio',exact:true}).fill('Dominada de prueba');
+  await page.getByRole('option',{name:'Dominada de prueba',exact:false}).click();
   await expect(page.getByText('Máximo: 10 repeticiones',{exact:true})).toBeVisible();
   await expect(page.getByText('Mayor lastre: 5 kg',{exact:true})).toBeVisible();
   await expect(page.locator('.exercise-chart')).toBeVisible();

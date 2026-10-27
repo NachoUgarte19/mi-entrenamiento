@@ -107,3 +107,11 @@ Validación: `npm test` y `node tests/recorded-session-browser.cjs` con TEST_URL
 ## Movilidad y compresiones · 15 min
 
 Plantilla basada en la rutina aportada: 5 min de movilidad articular (muñecas, hombros/CARs, cintura/columna, cadera 90/90 y tobillos knee-to-wall), 7 min de compresiones de L (pike 3 × 8–12, L-sit tuck/una pierna 3 × 10–15 s, straddle 2 × 8–12) y 3 min de flexibilidad (pike, straddle y extensión de hombros, 60 s cada uno). Descanso indicado: 20–30 s; temporizador inicial de 30 s editable. Incluye 11 ejercicios sin carga, 16 series y etiqueta Full body. Las cuentas existentes la agregan desde Rutinas → Agregar rutina de movilidad. Las cuentas que eligen plantillas al empezar la reciben junto con las rutinas previas; elegir empezar de cero sigue dejando la biblioteca vacía. La incorporación es por cuenta, no duplica ni reemplaza registros activos y usa la sincronización habitual.
+
+## Buscar ejercicios y registrar progresiones
+
+En Rutinas, sesiones, carga por calendario y Progreso, escribir el nombre o grupo muscular muestra hasta seis sugerencias y permite filtrar sin recorrer listas largas. La búsqueda ignora mayúsculas y acentos; Enter elige una sugerencia, las flechas recorren resultados y Escape cierra la búsqueda sin cerrar el formulario. Crear un ejercicio desde la búsqueda conserva el nombre escrito y lo agrega al formulario actual.
+
+En cada ejercicio de una sesión, “Variante / progresión de hoy” permite anotar tuck, una pierna, banda, etc. Luego se cargan reps/tiempo y carga; en sesiones en curso se marca cada serie realizada con ✓. En Progreso se busca el ejercicio y se elige la variante para consultar gráficos, récords y la última sesión frente a la anterior. Los valores anteriores y las precargas usan la misma variante, unidad y tipo de carga. Los registros anteriores se conservan como “Sin variante registrada”; los respaldos y la sincronización incluyen el campo opcional sin migración de base de datos. La variante se registra por ejercicio dentro de cada sesión.
+
+Validación: `npm test`, `npm run build`, `node tests/ui-search-browser.cjs` y las pruebas de calendario, progreso y movilidad con TEST_URL configurado. Las pruebas de navegador usan cuentas simuladas; no escriben en cuentas reales.

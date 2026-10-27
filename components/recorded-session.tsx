@@ -17,6 +17,8 @@ import {
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { ExerciseEditor } from "./editors";
+import { SearchPicker } from "./search-picker";
+import { ProgressionField } from "./progression-field";
 
 const units = {
   reps: "Repeticiones",
@@ -43,6 +45,7 @@ const emptySet = (): TrainingSet => ({
 export function RecordedSessionEditor({
   date,
   plan,
+  history,
   routines,
   exercises,
   onSave,
@@ -51,6 +54,7 @@ export function RecordedSessionEditor({
 }: {
   date: string;
   plan?: Plan;
+  history: TrainingSession[];
   routines: Routine[];
   exercises: Exercise[];
   onSave: (session: TrainingSession) => Promise<void>;
@@ -74,12 +78,10 @@ export function RecordedSessionEditor({
   }
   const [type, setType] = useState(initialType);
   const [draft, setDraft] = useState(() => build(initialType));
-  const [addId, setAddId] = useState("");
-  const [newExercise, setNewExercise] = useState(false);
+  const [newExercise, setNewExercise] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const saving = useRef(false);
-  const selectedExercise = addId || exercises[0]?.id || "";
   function changeItem(id: string, patch: Partial<SessionItem>) {
     setDraft((d) => ({
       ...d,
@@ -120,6 +122,7 @@ export function RecordedSessionEditor({
   return (
     <>
       <Modal
+        busy={busy}
         title="Cargar entrenamiento realizado"
         description="Registrá lo que hiciste ese día. Al guardar, las series cargadas contarán como realizadas."
         onClose={() => {
@@ -232,6 +235,16 @@ export function RecordedSessionEditor({
                     <Trash2 size={17} />
                   </Button>
                 </div>
+                <ProgressionField
+                  suggestions={history
+                    .flatMap((s) => s.items)
+                    .filter((i) => i.exercise.id === item.exercise.id)
+                    .map((i) => i.progression ?? "")}
+                  value={item.progression ?? ""}
+                  onChange={(progression) =>
+                    changeItem(item.id, { progression })
+                  }
+                />
                 {item.sets.map((set, index) => (
                   <div className="set-container" key={set.id}>
                     <div
@@ -367,42 +380,21 @@ export function RecordedSessionEditor({
                 </Button>
               </section>
             ))}
-            <div className="add-exercise form-grid">
-              <label>
-                Agregar desde tu biblioteca
-                <select
-                  value={selectedExercise}
-                  onChange={(e) => setAddId(e.target.value)}
-                >
-                  <option value="" disabled>
-                    Elegí un ejercicio
-                  </option>
-                  {exercises.map((ex) => (
-                    <option key={ex.id} value={ex.id}>
-                      {ex.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!selectedExercise}
-                onClick={() => {
-                  const ex = exercises.find((e) => e.id === selectedExercise);
-                  if (ex) addExercise(ex);
+            <div className="add-exercise">
+              <SearchPicker
+                label="Agregar ejercicio"
+                options={exercises.map((e) => ({ ...e, detail: e.group }))}
+                resetAfterSelect
+                disabled={busy}
+                onCreate={setNewExercise}
+                onSelect={(id) => {
+                  const exercise = exercises.find((e) => e.id === id);
+                  if (exercise) addExercise(exercise);
                 }}
-              >
-                <Plus size={16} />
-                Agregar ejercicio
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setNewExercise(true)}
-              >
-                Crear ejercicio nuevo
-              </Button>
+              />
+              <small>
+                Escribí y elegí una sugerencia. Si no existe, podés crearlo acá.
+              </small>
             </div>
             <label>
               Notas
@@ -428,13 +420,13 @@ export function RecordedSessionEditor({
           </fieldset>
         </form>
       </Modal>
-      {newExercise && (
+      {newExercise !== null && (
         <ExerciseEditor
-          onClose={() => setNewExercise(false)}
+          initialName={newExercise}
+          onClose={() => setNewExercise(null)}
           onSave={async (exercise) => {
             await onSaveExercise(exercise);
             addExercise(exercise);
-            setAddId(exercise.id);
           }}
         />
       )}

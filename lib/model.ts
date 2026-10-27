@@ -64,6 +64,7 @@ export const sessionItemSchema = z.object({
   notes: z.string(),
   circuit: z.string(),
   skipped: z.boolean(),
+  progression: z.string().trim().max(120).optional(),
   sets: z.array(setSchema),
 });
 export type SessionItem = z.infer<typeof sessionItemSchema>;

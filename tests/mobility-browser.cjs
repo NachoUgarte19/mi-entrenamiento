@@ -221,11 +221,21 @@ const { chromium, expect } = require("@playwright/test");
     await expect(page.locator(".session-view")).toContainText(
       "0 de 16 series completadas",
     );
-    await page.locator(".exercise-picker select").selectOption("0");
+    await page
+      .locator(".exercise-picker")
+      .getByRole("combobox")
+      .fill("Muñecas");
+    await page.getByRole("option", { name: "Muñecas", exact: false }).click();
     await expect(
       page.getByRole("spinbutton", { name: "Serie 1, Segundos", exact: true }),
     ).toBeVisible();
-    await page.locator(".exercise-picker select").selectOption("5");
+    await page
+      .locator(".exercise-picker")
+      .getByRole("combobox")
+      .fill("Pike compression lifts");
+    await page
+      .getByRole("option", { name: "Pike compression lifts", exact: false })
+      .click();
     await expect(page.locator(".exercise-panel h2")).toHaveText(
       "Pike compression lifts",
     );
@@ -238,19 +248,26 @@ const { chromium, expect } = require("@playwright/test");
     await expect(
       page.getByRole("spinbutton", { name: "Serie 1, Reps", exact: true }),
     ).toBeVisible();
-    await page.locator(".exercise-picker select").selectOption("6");
+    await page.locator(".exercise-picker").getByRole("combobox").fill("L-sit");
+    await page.getByRole("option", { name: "L-sit", exact: false }).click();
     await expect(page.locator(".exercise-panel")).toContainText(
       "3 series · 10–15 seg",
     );
     await expect(
       page.getByRole("spinbutton", { name: "Serie 1, Segundos", exact: true }),
     ).toBeVisible();
-    await page.locator(".exercise-picker select").selectOption("10");
+    await page
+      .locator(".exercise-picker")
+      .getByRole("combobox")
+      .fill("Extensión de hombros");
+    await page
+      .getByRole("option", { name: "Extensión de hombros", exact: false })
+      .click();
     await expect(page.locator(".exercise-panel h2")).toHaveText(
       "Extensión de hombros · flexibilidad",
     );
     await expect(page.locator(".exercise-panel")).toContainText(
-      "1 series · 60 seg",
+      "1 serie · 60 seg",
     );
     if (errors.length) throw Error(errors.join("\n"));
     console.log(

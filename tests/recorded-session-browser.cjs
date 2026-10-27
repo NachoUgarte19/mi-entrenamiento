@@ -250,7 +250,10 @@ const { chromium, expect } = require("@playwright/test");
       .getByLabel("Nombre del entrenamiento", { exact: true })
       .fill("En casa ayer");
     await page
-      .getByRole("button", { name: "Agregar ejercicio", exact: true })
+      .getByRole("combobox", { name: "Agregar ejercicio", exact: true })
+      .fill("Dominada de prueba");
+    await page
+      .getByRole("option", { name: "Dominada de prueba", exact: false })
       .click();
     await page
       .getByRole("button", { name: "Agregar serie", exact: true })
@@ -274,7 +277,10 @@ const { chromium, expect } = require("@playwright/test");
       })
       .fill("0");
     await page
-      .getByRole("button", { name: "Crear ejercicio nuevo", exact: true })
+      .getByRole("combobox", { name: "Agregar ejercicio", exact: true })
+      .fill("Plancha en casa");
+    await page
+      .getByRole("button", { name: "Crear “Plancha en casa”", exact: true })
       .click();
     const newExercise = page.getByRole("dialog", {
       name: "Nuevo ejercicio",
@@ -438,7 +444,12 @@ const { chromium, expect } = require("@playwright/test");
       "2 de 2 series completadas",
     );
     await nav("Progreso");
-    await page.getByLabel("Consultar un ejercicio").selectOption("test-pull");
+    await page
+      .getByRole("combobox", { name: "Consultar un ejercicio", exact: true })
+      .fill("Dominada de prueba");
+    await page
+      .getByRole("option", { name: "Dominada de prueba", exact: false })
+      .click();
     await expect(
       page.getByText("Máximo: 12 repeticiones", { exact: true }),
     ).toBeVisible();

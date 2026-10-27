@@ -1,3 +1,4 @@
+import { normalizeSearch } from "./exercise-search";
 import {
   type TrainingSession,
   type SessionItem,
@@ -22,6 +23,8 @@ export function previousItem(
       (i) =>
         !i.skipped &&
         i.exercise.id === item.exercise.id &&
+        normalizeSearch(i.progression ?? "") ===
+          normalizeSearch(item.progression ?? "") &&
         i.exercise.unit === item.exercise.unit &&
         i.exercise.load === item.exercise.load &&
         i.sets.some((s) => s.done),
@@ -31,6 +34,11 @@ export function repeatPrevious(
   item: SessionItem,
   previous: SessionItem,
 ): SessionItem {
+  if (
+    normalizeSearch(item.progression ?? "") !==
+    normalizeSearch(previous.progression ?? "")
+  )
+    return item;
   const sets = previous.sets.filter((s) => s.done);
   return {
     ...item,
@@ -71,13 +79,22 @@ export function monthSummary(
 export function exercisePoints(
   sessions: TrainingSession[],
   exerciseId: string,
+  progression?: string,
 ) {
   const all = [...sessions]
     .filter((s) => s.status === "completed")
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
   const latest = all
     .flatMap((s) => s.items)
-    .filter((i) => i.exercise.id === exerciseId)
+    .filter(
+      (i) =>
+        i.exercise.id === exerciseId &&
+        !i.skipped &&
+        i.sets.some((s) => s.done) &&
+        (progression === undefined ||
+          normalizeSearch(i.progression ?? "") ===
+            normalizeSearch(progression)),
+    )
     .at(-1)?.exercise;
   if (!latest) return { exercise: undefined, points: [] };
   const points = all.flatMap((s) => {
@@ -86,6 +103,9 @@ export function exercisePoints(
         (i) =>
           !i.skipped &&
           i.exercise.id === exerciseId &&
+          (progression === undefined ||
+            normalizeSearch(i.progression ?? "") ===
+              normalizeSearch(progression)) &&
           i.exercise.unit === latest.unit &&
           i.exercise.load === latest.load,
       )
@@ -122,4 +142,29 @@ export function bestCardioTimes(items: Cardio[]) {
       a.activity.localeCompare(b.activity) ||
       (a.distanceKm ?? 0) - (b.distanceKm ?? 0),
   );
+}
+
+export function progressionOptions(
+  sessions: TrainingSession[],
+  exerciseId: string,
+) {
+  const options = new Map<string, { id: string; name: string }>();
+  for (const session of [...sessions]
+    .filter((s) => s.status === "completed")
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt))) {
+    for (const item of session.items.filter(
+      (i) =>
+        i.exercise.id === exerciseId &&
+        !i.skipped &&
+        i.sets.some((s) => s.done),
+    )) {
+      const id = normalizeSearch(item.progression ?? "");
+      options.delete(id);
+      options.set(id, {
+        id,
+        name: item.progression?.trim() || "Sin variante registrada",
+      });
+    }
+  }
+  return [...options.values()];
 }
